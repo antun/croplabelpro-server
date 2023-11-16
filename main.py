@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 import requests
 import json
@@ -15,6 +14,8 @@ app = Flask(__name__)
 replicate_api_url = "https://api.replicate.com/v1/deployments/antonelli182/hackathon-fastsam/predictions"
 
 replicate_api_token = "r8_4cAphiTVFDG2uiyIHBU0WLN3VxtGrTf17wKLL"
+
+openai_api_key = os.environ.get("OPENAI_API_KEY", "OpenAI API key not set")
 
 replicate_headers = {
     "Content-Type": "application/json",
@@ -42,6 +43,39 @@ def write_read(file_contents, bucket_name, blob_name):
     # See: https://docs.python.org/3/library/io.html
     with blob.open("wb") as f:
         f.write(file_contents)
+
+
+def gpt_4_vision_api_call(segmented_image_url):
+    # Payload for the GPT-4 Vision API call
+    vision_payload = {
+        "model": "gpt-4-vision-preview",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Provide a bullet list of all colored segments (outlined with a blue contour), including high level position in the image, and its color. Just give the list, no other explanation/message."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {               
+                            "url": segmented_image_url
+                        }
+                    }
+                ]
+            }
+        ],
+        "max_tokens": 800
+    }
+    openai_gpt4_headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {openai_api_key}"
+    }
+    # Making the GPT-4 Vision API call
+    vision_response = requests.post("https://api.openai.com/v1/chat/completions", headers=openai_gpt4_headers, json=vision_payload)
+    vision_response_data = vision_response.json()
+    return vision_response_data
 
 
 @app.route('/analyze', methods=['POST'])
@@ -109,17 +143,19 @@ def analyze(request):
             if result.get('status') == 'succeeded':
                 # Process the result as needed
                 # For example, you can return the result or save the output image
+                segmented_image_url = result.get('output')
+                openai_vision_response = gpt_4_vision_api_call(segmented_image_url)
+                choices = openai_vision_response.get('choices')[0].get('message').get('content')
+                print('@choices', choices);
+
                 return jsonify(
                     {
                         "status": "success",
                         "message": "Processing complete",
                         "rawImageUrl": rawImageUrl,
                         "rawImageSavedUrl": rawImageSavedUrl,
-                        "segmentedImageUrl": result.get('output'),
-                        "segments": [
-                            { "color": "pink", "centerCoordinates": [[123,456]], "area": 12345 },
-                            { "color": "blue", "centerCoordinates": [[457,456]], "area": 12345 }
-                        ]
+                        "segmentedImageUrl": segmented_image_url,
+                        "segments": choices
                     }
                 ), 200, response_headers
             elif result.get('status') == 'failed':

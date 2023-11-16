@@ -8,4 +8,5 @@ gcloud functions deploy analyze \
   --source=. \
   --entry-point=analyze \
   --trigger-http \
-  --allow-unauthenticated
+  --allow-unauthenticated \
+  --env-vars-file .env.yaml

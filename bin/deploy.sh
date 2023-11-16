@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-gcloud functions deploy prompt \
+gcloud functions deploy analyze \
   --gen2 \
   --runtime=python312 \
   --project=genlabhackathon \
   --region=us-central1 \
   --source=. \
-  --entry-point=prompt \
+  --entry-point=analyze \
   --trigger-http \
   --allow-unauthenticated

@@ -7,4 +7,4 @@ To develop locally, run `functions-framework --target prompt --debug` and then t
 ## Deployment
 Run `./bin/deploy.sh`
 
-https://us-central1-genlabhackathon.cloudfunctions.net/prompt
+https://us-central1-genlabhackathon.cloudfunctions.net/analyze

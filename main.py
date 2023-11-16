@@ -55,7 +55,7 @@ def gpt_4_vision_api_call(segmented_image_url):
                 "content": [
                     {
                         "type": "text",
-                        "text": "Provide a bullet list of all colored segments (outlined with a blue contour), including high level position in the image, and its color. Just give the list, no other explanation/message."
+                        "text": "Provide a numbered list of all colored segments (outlined with a blue contour), including high level position in the image, and its color. Just give the list, no other explanation/message."
                     },
                     {
                         "type": "image_url",

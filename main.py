@@ -12,15 +12,17 @@ os.environ["GCLOUD_PROJECT"] = 'cropscanpro'
 app = Flask(__name__)
 
 # URL for the API request
-api_url = "https://api.replicate.com/v1/deployments/antonelli182/hackathon-fastsam/predictions"
+replicate_api_url = "https://api.replicate.com/v1/deployments/antonelli182/hackathon-fastsam/predictions"
 
-# Replace 'your_token_here' with your actual API token
-api_token = "r8_4cAphiTVFDG2uiyIHBU0WLN3VxtGrTf17wKLL"
+replicate_api_token = "r8_4cAphiTVFDG2uiyIHBU0WLN3VxtGrTf17wKLL"
 
-# Headers for the request
-headers = {
+replicate_headers = {
     "Content-Type": "application/json",
-    "Authorization": f"Token {api_token}"
+    "Authorization": f"Token {replicate_api_token}"
+}
+
+response_headers = {
+'Access-Control-Allow-Origin': '*'
 }
 
 storage_client = storage.Client()
@@ -44,6 +46,19 @@ def write_read(file_contents, bucket_name, blob_name):
 
 @app.route('/analyze', methods=['POST'])
 def analyze(request):
+    # Handle CORS
+    if request.method == 'OPTIONS':
+        # Allows POST requests from any origin with the Content-Type
+        # header and caches preflight response for an 3600s
+        cors_headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Max-Age': '3600'
+        }
+        return ('', 204, cors_headers)
+    
+
     # Retrieve the image URL from the request
     data = request.get_json()
     rawImageUrl = data['rawImageUrl']
@@ -78,7 +93,7 @@ def analyze(request):
     }
 
     # Send the prediction request
-    response = requests.post(api_url, headers=headers, data=json.dumps(api_data))
+    response = requests.post(replicate_api_url, headers=replicate_headers, data=json.dumps(api_data))
     status_url = response.json().get('urls').get('get')
 
     if response.status_code not in [200, 201]:
@@ -88,7 +103,7 @@ def analyze(request):
 
     # Check the prediction status
     while True:
-        status_response = requests.get(status_url, headers=headers)
+        status_response = requests.get(status_url, headers=replicate_headers)
         if status_response.status_code == 200:
             result = status_response.json()
             if result.get('status') == 'succeeded':
@@ -106,7 +121,7 @@ def analyze(request):
                             { "color": "blue", "centerCoordinates": [[457,456]], "area": 12345 }
                         ]
                     }
-                ), 200
+                ), 200, response_headers
             elif result.get('status') == 'failed':
                 print(result)
                 return error_json("Error getting prediction response", '', status_response.status_code)
